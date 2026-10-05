@@ -1,0 +1,965 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#09100f">
+<title>15部屋しか作れなかったノアの方舟</title>
+<style>
+:root{
+  --bg:#07100e;
+  --ark-width:min(100%, calc(222.222dvh - 255px));
+  --panel:#0f1816;
+  --gold:#c8a867;
+  --gold2:#ecd59a;
+  --text:#efe9dc;
+  --muted:#9f9a8d;
+  --line:rgba(225,201,142,.25);
+  --shadow:0 22px 70px rgba(0,0,0,.46);
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050b0a;color:var(--text);font-family:"Hiragino Mincho ProN","Yu Mincho",serif}
+body{display:flex;align-items:center;justify-content:center;-webkit-text-size-adjust:100%;touch-action:manipulation}
+body::before{
+  content:"";position:fixed;inset:-20%;
+  background:
+    radial-gradient(circle at 50% 45%,rgba(157,130,73,.16),transparent 32%),
+    radial-gradient(circle at 16% 18%,rgba(44,93,81,.10),transparent 25%),
+    linear-gradient(180deg,#0a1512 0%,#050a09 100%);
+  filter:blur(10px);animation:breathe 9s ease-in-out infinite alternate;pointer-events:none
+}
+@keyframes breathe{from{transform:scale(1);opacity:.82}to{transform:scale(1.04);opacity:1}}
+.app{position:relative;z-index:1;width:100%;height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:max(14px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));gap:12px}
+.topbar{width:var(--ark-width);min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:12px}
+.brand{min-width:0;overflow:hidden;text-overflow:ellipsis;letter-spacing:.08em;font-size:clamp(10px,1.2vw,14px);color:#c9b98e;white-space:nowrap;font-weight:600}
+.counter{
+  display:flex;
+  align-items:baseline;
+  justify-content:center;
+  gap:.22em;
+  min-width:340px;
+  color:var(--gold2);
+  font-size:clamp(12px,1.15vw,16px);
+  line-height:1.25;
+  letter-spacing:.035em;
+  white-space:nowrap;
+  text-align:center;
+  text-shadow:0 0 24px rgba(231,203,136,.15)
+}
+.hud-number{
+  display:inline-block;
+  min-width:1.25em;
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:clamp(25px,2.25vw,34px);
+  font-weight:500;
+  line-height:.9;
+  letter-spacing:0;
+  color:#f2d999;
+  text-align:center;
+  font-variant-numeric:tabular-nums;
+  text-shadow:0 0 26px rgba(231,203,136,.22)
+}
+.hud-prefix,.hud-suffix{display:inline-block}
+.actions{display:flex;justify-content:flex-end;gap:8px}
+button{appearance:none;border:1px solid var(--line);background:rgba(16,25,22,.76);color:#e7dfcf;border-radius:999px;padding:9px 12px;font:600 12px/1 system-ui,sans-serif;letter-spacing:.06em;cursor:pointer;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transition:.2s;-webkit-tap-highlight-color:transparent}
+@media (hover:hover) and (pointer:fine){button:hover{border-color:rgba(236,213,154,.6);background:rgba(31,40,35,.92)}}
+button:active{transform:scale(.97)}
+button:disabled{opacity:.34;cursor:default;transform:none}
+.board-wrap{position:relative;width:var(--ark-width);aspect-ratio:20/9;filter:drop-shadow(0 28px 70px rgba(0,0,0,.54))}
+.board{position:absolute;inset:0;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(3,1fr);gap:4px;padding:5px;background:linear-gradient(135deg,rgba(113,86,43,.82),rgba(45,37,24,.92));border:1px solid rgba(230,201,136,.26);box-shadow:inset 0 0 0 1px rgba(255,255,255,.03),var(--shadow);border-radius:9px;overflow:hidden}
+.room{position:relative;overflow:hidden;background:#111;border:0;padding:0;border-radius:3px;cursor:pointer;isolation:isolate;outline:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.room::after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 1px rgba(255,231,180,.08),inset 0 -25px 40px rgba(0,0,0,.1);pointer-events:none;z-index:5}
+.room img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.002);transition:filter .28s ease,transform .5s cubic-bezier(.2,.7,.2,1),opacity .25s ease}
+@media (hover:hover) and (pointer:fine){.room:hover img{transform:scale(1.025)}}
+.room.changing img{filter:brightness(.2) blur(5px);transform:scale(.94);opacity:.25}
+.room.reveal img{animation:reveal .72s cubic-bezier(.14,.84,.25,1)}
+@keyframes reveal{0%{opacity:.2;transform:scale(1.11);filter:brightness(2) saturate(.6) blur(4px)}48%{opacity:1;filter:brightness(1.35) saturate(1.05) blur(0)}100%{transform:scale(1.002);filter:none}}
+.flash{position:absolute;inset:-30%;z-index:6;pointer-events:none;opacity:0;background:conic-gradient(from 25deg,transparent,rgba(250,223,160,.22),transparent 27%,transparent 74%,rgba(255,233,178,.18),transparent);mix-blend-mode:screen}
+.room.reveal .flash{animation:flash .72s ease-out}
+@keyframes flash{0%{opacity:0;transform:rotate(-20deg) scale(.6)}25%{opacity:1}100%{opacity:0;transform:rotate(32deg) scale(1.4)}}
+.ripple{position:absolute;width:10px;height:10px;border-radius:50%;border:1px solid rgba(255,229,166,.9);z-index:9;pointer-events:none;transform:translate(-50%,-50%);animation:ripple .72s ease-out forwards}
+@keyframes ripple{to{width:190%;height:190%;opacity:0;border-width:0}}
+.room.denied{animation:denied .28s ease}
+@keyframes denied{25%{transform:translateX(-4px)}50%{transform:translateX(4px)}75%{transform:translateX(-2px)}}
+
+/* 「最初から」：方舟の灯りが消え、最初の夜へ戻る */
+
+.reset-veil{
+  position:absolute;
+  inset:0;
+  z-index:40;
+  pointer-events:none;
+  opacity:0;
+  visibility:hidden;
+  border-radius:9px;
+  background:
+    radial-gradient(circle at 50% 48%,rgba(13,21,17,.94),rgba(1,4,3,.995) 73%);
+}
+.board::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:20;
+  pointer-events:none;
+  opacity:0;
+  background:
+    radial-gradient(circle at 50% 50%,rgba(12,19,16,.92),rgba(1,4,3,.985) 72%);
+  transition:opacity .18s ease;
+}
+.board.reset-black::before{opacity:1}
+.board.reset-groan{animation:arkGroan .72s ease both}
+
+.room::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:8;
+  pointer-events:none;
+  opacity:0;
+  background:
+    radial-gradient(circle at 31% 30%,rgba(31,28,18,.12),rgba(2,4,3,.94) 78%);
+}
+.room.reset-out::before{
+  animation:resetDim .38s ease forwards;
+  animation-delay:calc(var(--reset-order,0) * 32ms);
+}
+.room.reset-out img{
+  animation:resetImageOut .38s ease forwards;
+  animation-delay:calc(var(--reset-order,0) * 32ms);
+}
+.room.reset-in::before{
+  opacity:1;
+  animation:resetLightIn .52s cubic-bezier(.2,.72,.2,1) forwards;
+  animation-delay:calc(var(--reset-in-order,0) * 85ms);
+}
+.room.reset-in img{
+  filter:brightness(.18) saturate(.55);
+  transform:scale(.985);
+  animation:resetImageIn .52s cubic-bezier(.18,.78,.2,1) forwards;
+  animation-delay:calc(var(--reset-in-order,0) * 85ms);
+}
+
+@keyframes resetDim{
+  from{opacity:0}
+  to{opacity:1}
+}
+@keyframes resetImageOut{
+  from{filter:none;transform:scale(1.002);opacity:1}
+  to{filter:brightness(.08) saturate(.28);transform:scale(.97);opacity:.52}
+}
+@keyframes resetLightIn{
+  from{opacity:1}
+  to{opacity:0}
+}
+@keyframes resetImageIn{
+  0%{filter:brightness(.18) saturate(.55);transform:scale(.985);opacity:.7}
+  58%{filter:brightness(1.18) saturate(.96);transform:scale(1.012);opacity:1}
+  100%{filter:none;transform:scale(1.002);opacity:1}
+}
+@keyframes arkGroan{
+  0%,100%{transform:translateX(0) rotate(0)}
+  22%{transform:translateX(-1px) rotate(-.035deg)}
+  48%{transform:translateX(1.2px) rotate(.04deg)}
+  72%{transform:translateX(-.5px) rotate(-.018deg)}
+}
+.sr-status{
+  position:absolute!important;
+  width:1px!important;
+  height:1px!important;
+  padding:0!important;
+  margin:-1px!important;
+  overflow:hidden!important;
+  clip:rect(0,0,0,0)!important;
+  white-space:nowrap!important;
+  border:0!important;
+}
+.finish{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:rgba(2,6,5,.78);backdrop-filter:blur(14px);opacity:0;pointer-events:none;transition:.45s}
+.finish.show{opacity:1;pointer-events:auto}
+.finish-card{width:min(92vw,440px);padding:34px 28px 26px;border:1px solid rgba(231,205,144,.3);border-radius:20px;background:linear-gradient(180deg,rgba(22,31,27,.96),rgba(8,14,12,.96));box-shadow:0 30px 100px rgba(0,0,0,.6);text-align:center}
+.finish-mark{width:54px;height:54px;margin:0 auto 18px;border:1px solid rgba(232,205,139,.5);border-radius:50%;display:grid;place-items:center;color:#e4ca8a;font:28px Georgia,serif;box-shadow:0 0 35px rgba(219,184,103,.12)}
+.finish h1{font-weight:500;font-size:24px;letter-spacing:.15em;margin:0 0 10px}
+.finish p{font:400 13px/1.8 system-ui,sans-serif;color:#aaa497;margin:0 0 22px}
+.finish .row{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}
+.finish .primary{border-color:rgba(236,213,154,.6);background:linear-gradient(180deg,rgba(153,120,55,.28),rgba(63,48,24,.35));padding:12px 19px}
+.toast{position:fixed;left:50%;bottom:max(22px,env(safe-area-inset-bottom));z-index:50;transform:translate(-50%,20px);opacity:0;padding:10px 15px;border-radius:999px;background:rgba(9,14,12,.9);border:1px solid rgba(233,207,145,.28);font:500 12px/1 system-ui,sans-serif;color:#ded6c7;transition:.28s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@supports not (height: 100dvh){
+  :root{--ark-width:min(100%, calc(222.222vh - 255px))}
+}
+
+.hud-flood{
+  font-size:clamp(15px,1.45vw,20px);
+  color:#f2d999;
+  letter-spacing:.06em
+}
+@media (min-width:701px) and (max-width:1180px){
+  .counter{min-width:300px;font-size:13px}
+  .hud-number{font-size:30px}
+}
+@media (max-width:700px){
+  .app{gap:8px;padding:max(8px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}
+  :root{--ark-width:min(100%, calc(222.222dvh - 255px))}
+  .brand{font-size:10px;letter-spacing:.03em}
+  .counter{min-width:0;font-size:10.5px;letter-spacing:.005em;white-space:normal;line-height:1.25;gap:.18em}
+  .hud-number{font-size:22px}
+  .actions{gap:6px;min-width:0}
+  .actions button{padding:7px 9px;font-size:10px;min-height:38px}
+  .board{gap:1px;padding:2px;border-radius:6px}
+  .hint{font-size:9px}
+}
+@media (max-width:640px) and (orientation:portrait){
+  :root{--ark-width:100%}
+  .topbar{
+    grid-template-columns:minmax(0,1fr) auto;
+    grid-template-areas:"brand brand" "counter actions";
+    row-gap:6px;
+    column-gap:10px;
+  }
+  .brand{grid-area:brand;text-align:center;white-space:normal;overflow:visible;text-overflow:clip;line-height:1.3}
+  .counter{grid-area:counter;justify-content:flex-start}
+  .actions{grid-area:actions;justify-content:flex-end}
+}
+@media (pointer:coarse){
+  .actions button,.finish button{min-height:40px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+}
+</style>
+</head>
+<body>
+<main class="app">
+  <header class="topbar">
+    <div class="brand">15部屋しか作れなかったノアの方舟</div>
+    <div class="counter" id="remainingHud" aria-live="polite">
+      <span class="hud-prefix">洪水までにあと</span>
+      <span class="hud-number" id="remainingNumber">20</span>
+      <span class="hud-suffix" id="remainingSuffix">回動物を入れられます。</span>
+    </div>
+    <div class="actions">
+      <button id="resetBtn" type="button">最初から</button>
+      <button id="downloadBtn" type="button">画像を保存</button>
+    </div>
+  </header>
+
+  <section class="board-wrap">
+    <div class="board" id="board" aria-label="方舟の15部屋"></div>
+    <div class="reset-veil" id="resetVeil" aria-hidden="true"></div>
+  </section>
+
+  <div id="hint" class="sr-status" aria-live="polite"></div>
+</main>
+
+<section class="finish" id="finish">
+  <div class="finish-card">
+    <div class="finish-mark">A</div>
+    <h1>方舟の扉が閉じる</h1>
+    <p>15の部屋が決まりました。<br>この配置を1枚の画像として残せます。</p>
+    <div class="row">
+      <button class="primary" id="finishDownload" type="button">画像を保存</button>
+      <button id="closeFinish" type="button">配置を見る</button>
+    </div>
+  </div>
+</section>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+const DIRECT = id => `https://lh3.googleusercontent.com/d/${id}`;
+const EMPTY_ROOM_URL = DIRECT("1Rm8GAGRMK9kFKaYQbdv3D1MhIL9TxQRh");
+
+const NOAH_ROOM_URL = DIRECT("1u4pTulu74ioTzqUm-qHUQ3wFOnFL5F8k");
+
+const ANIMAL_URLS = [
+  "https://lh3.googleusercontent.com/d/1cE7NzUU_TDkBoAEWJizpEKKFMVey6UdN",
+  "https://lh3.googleusercontent.com/d/1W7CVY2fNeR3tvaYTBadq4Zn4nkOszdSK",
+  "https://lh3.googleusercontent.com/d/1xFiJxEY3UeCP1Sk_EU1J7IrQXptOOsYf",
+  "https://lh3.googleusercontent.com/d/1bRgBQacZ46i7nnwbhNq6Jt1r0UmJJByn",
+  "https://lh3.googleusercontent.com/d/1KTpN0mbZ2IGsAAZc1r5_WWNCm0qZ07RO",
+  "https://lh3.googleusercontent.com/d/17rmRL1guO2aXdk8a66us37qTeF_YtEDP",
+  "https://lh3.googleusercontent.com/d/1AvlaSaJA9So406dSz1WUDCWoABw7PLMW",
+  "https://lh3.googleusercontent.com/d/1-6v2FVMu8JJYtufeooXoKZ-LG8YTXghY",
+  "https://lh3.googleusercontent.com/d/10_d_52EkI14UXr-_ZrOnGUDAVZKqGTft",
+  "https://lh3.googleusercontent.com/d/1fD_CbhtdAUBJshLayozu53lGuH0EUwSH",
+  "https://lh3.googleusercontent.com/d/1fGA0cyAVafS7F90ktbFrt9r9BWpDUqtp",
+  "https://lh3.googleusercontent.com/d/1U1wQr2MX35ZL41C81Nv4zNw93-JT8Fh0",
+  "https://lh3.googleusercontent.com/d/1N7E0X4QZW0ckYNcJ-815KUO4YQOj2_pK",
+  "https://lh3.googleusercontent.com/d/16M6uPL7NkhuKjYEBRytk1PSCGnfIbUE5",
+  "https://lh3.googleusercontent.com/d/1zqwk7TJnrM4aQqxNE-0qgrzNhSXbMFvB",
+  "https://lh3.googleusercontent.com/d/1kVHXxI4FU36qrXkG9WrAuWeEmWTHRUMl",
+  "https://lh3.googleusercontent.com/d/1rTS1gSUCXDmtCtGaHmgBsyeeKSBzms7E",
+  "https://lh3.googleusercontent.com/d/1NykkkuK0A7m93xmcTPPisuG2lNWo4an2",
+  "https://lh3.googleusercontent.com/d/1t4Bvv6mdgqAtEuqBxAUsPWfT1JKCQH6k",
+  "https://lh3.googleusercontent.com/d/1Wmx7m__fqVepWXp3hAcQEwQ0QqHNzZlS",
+  "https://lh3.googleusercontent.com/d/15xbXpV-11LUX8pSg4M7kG1m2G7qHsito",
+  "https://lh3.googleusercontent.com/d/1B_6pl4vPKEhceO5GrthH8t1sOMdGB0OU",
+  "https://lh3.googleusercontent.com/d/1IbVbWV4_m0Qzk8v3_yfzPD7_d_eUmw-K",
+  "https://lh3.googleusercontent.com/d/1CcK8VQxtJDNLLBFN3KTJA3qa9rxyzDAA",
+  "https://lh3.googleusercontent.com/d/1eNNCRPYb3Xvg2OIepdzrWJM2d-xfYWky",
+  "https://lh3.googleusercontent.com/d/1rzyG2A95qruWj1hdkLT0DxH0j3kLtmkN",
+  "https://lh3.googleusercontent.com/d/1ZvCBxWWCAZr5R2hLYmAZMXF4EKXCiFH6",
+  "https://lh3.googleusercontent.com/d/1xI2bH6c1koWXKuF59eqrFoFaA0yAj8Dg",
+  "https://lh3.googleusercontent.com/d/1QXUspTSP3STO8u-VFTKjo9X0StAwtOcR",
+  "https://lh3.googleusercontent.com/d/1PW8paY9FOLVOTDkxK1L_AQkOOSBnQzno",
+  "https://lh3.googleusercontent.com/d/1q1gTZ0lHw7qdJAHuqLEjc8Io3w_OiiUt",
+  "https://lh3.googleusercontent.com/d/1eLdzPvbHxNmBOIEUftXXuF2POjbziqo1",
+  "https://lh3.googleusercontent.com/d/1osafG6tdFtDW5Eq8YzFlFMcT6dFGh1Ov",
+  "https://lh3.googleusercontent.com/d/16lHAh6bheDVUGvSAxQTZOtqzLniYxIkP",
+  "https://lh3.googleusercontent.com/d/1dpBy4yOPwuNlef5dXoVEmKZUtBj-TURJ",
+  "https://lh3.googleusercontent.com/d/1jPMWvig6hz7VKrOSldgpJWasruAB5eyi",
+  "https://lh3.googleusercontent.com/d/10MuVyDjIKqjBi0I5QepqyZuJDJuqiqT6",
+  "https://lh3.googleusercontent.com/d/1tnJiOvD1jB4IuxBr-gWuqNgQ_1DBDZgd",
+  "https://lh3.googleusercontent.com/d/1Fq8xLeuCIZ-haBJBRE_HzbDPYqToucre",
+  "https://lh3.googleusercontent.com/d/15s94KJ0MckpLsC1wa3jHkh4Izx1MdqY-",
+  "https://lh3.googleusercontent.com/d/1Q-Zxjgfy0Al9_AL9QH1Ki-s0ZkPGcpkx",
+  "https://lh3.googleusercontent.com/d/1cqCE_aPbuc-IAgze1_FYrPTht-meuJAs",
+  "https://lh3.googleusercontent.com/d/1e1c-RmgL5KVcTqfds8_s_965ejSt0cli",
+  "https://lh3.googleusercontent.com/d/1_qbXgcucYbSUOEKQWmLXkNmc0sUXR6h3",
+  "https://lh3.googleusercontent.com/d/1Dq9pgwxpLxGy525gQe5vsyBk8tqwMzzf",
+  "https://lh3.googleusercontent.com/d/1E0z59G5FJAfuoi3xP1CQEU08qIHdqFR-",
+  "https://lh3.googleusercontent.com/d/1NYibrKnpluosbR00RGegsIadh2C7izc3",
+  "https://lh3.googleusercontent.com/d/1LjeOQrzQhEpN_0vs3IWoWIX8DYkfg3H8",
+  "https://lh3.googleusercontent.com/d/10Bq0ShWsYQFhNt0blcDYgAurjaDCWb8I",
+  "https://lh3.googleusercontent.com/d/1xhSKnq2ixVrKqlGDz6S4zCgGqwKuKDV5",
+  "https://lh3.googleusercontent.com/d/1hDCsAVDaPaqvnt7Bm_nQdf5RUEKYqqEK",
+  "https://lh3.googleusercontent.com/d/1P2QvW-DUSVDBZqkW73KJR1KYuulZdDtP",
+  "https://lh3.googleusercontent.com/d/1wZlInb3iXSUXvouUWx2ynsEDSWKXvBd5",
+  "https://lh3.googleusercontent.com/d/1zMRfN3tgMUWXWGmLiOCIa76NugMFkAPC",
+  "https://lh3.googleusercontent.com/d/1G9opLoRHmm2HvOe9AojrJUXXaiGUU8YJ",
+  "https://lh3.googleusercontent.com/d/1uxhLnZ5nDpdXitsbQMgdAkdXVnLqPbIM",
+  "https://lh3.googleusercontent.com/d/1bAVR1E68avwxbaNNRtZtKQgMK7i2EKdY",
+  "https://lh3.googleusercontent.com/d/1-xdThyY86s-Nwq9XNBVHYWFyGXSbvcQE",
+  "https://lh3.googleusercontent.com/d/12tzBYObYLK8BhMfbO_4p0MkwgPSHFn8y",
+  "https://lh3.googleusercontent.com/d/1LAltik0di7E9MoPn8spSkbjLCQQfDrni",
+  "https://lh3.googleusercontent.com/d/16mL5-nVklYNapJV54cB4KxeBxQew-HfN",
+  "https://lh3.googleusercontent.com/d/1XEpTlF6Zjf_xVi5Y8Gs0qioLq0xXBaIH",
+  "https://lh3.googleusercontent.com/d/1V7b6Y5GbHZaKCa_YvefO5AVrsjM7yaAx",
+  "https://lh3.googleusercontent.com/d/1VXoOyfYzDmPxH980b1Ts_D5I7u9arLdv",
+  "https://lh3.googleusercontent.com/d/1JPko_gBlMy3uekfKHaxlWrmC4qrxn0Zm",
+  "https://lh3.googleusercontent.com/d/1mkZvzuAgyprKQgzSYHWNenj5ECNB5HQf",
+  "https://lh3.googleusercontent.com/d/1Jf_kmaeE4hMXY5KixsaA7McI7Gc_yMJ9",
+  "https://lh3.googleusercontent.com/d/1G7nQ3l5cA4XtIdyt7tMt5OKYVExSX5NC",
+  "https://lh3.googleusercontent.com/d/1y9Vk0573PoI61ZJK0kbPMFXKCE23Pl8l",
+  "https://lh3.googleusercontent.com/d/1g5Bkjl8of2GQeCkKqPMTtvY8c1ImY1pa",
+  "https://lh3.googleusercontent.com/d/180W44c92kTA-9VUuE2Cq8cU6hst6GvtI",
+  "https://lh3.googleusercontent.com/d/1zPBlitxO2tukRqC1Yre3CUe9iajNA0G7",
+  "https://lh3.googleusercontent.com/d/1oPsGd4bWqiSuWNfoc20XgQPL68GvWqqY",
+  "https://lh3.googleusercontent.com/d/1-LkvDkdW0osvIiNPOmJXKv5X57XcyUQl",
+  "https://lh3.googleusercontent.com/d/1YjSvCCJOMa47PHbZXF8BcoCh2DXuL6b8",
+  "https://lh3.googleusercontent.com/d/1Na1SdSA5K9tpKq0rwoIeavW6x--mKVlT",
+  "https://lh3.googleusercontent.com/d/1Z2mW-g3zInoaaDURzlfKa9tzq49pqBEW",
+  "https://lh3.googleusercontent.com/d/1dizlnJDiydZn7oC_vQ3720zRbgyeME-h",
+  "https://lh3.googleusercontent.com/d/1i9thX2IE5MsxRQEripT9EAbnw4OxpCTx"
+];
+
+const TOTAL_CHANGES = 20;
+const NOAH_INDEX = 7; // 5×3の中央：横3・縦2
+const ROOM_COUNT = 15;
+
+const board = document.getElementById("board");
+const resetVeil = document.getElementById("resetVeil");
+const remainingHud = document.getElementById("remainingHud");
+const remainingNumber = document.getElementById("remainingNumber");
+const remainingSuffix = document.getElementById("remainingSuffix");
+const hintEl = document.getElementById("hint");
+const resetBtn = document.getElementById("resetBtn");
+const downloadBtn = document.getElementById("downloadBtn");
+const finish = document.getElementById("finish");
+const finishDownload = document.getElementById("finishDownload");
+const closeFinish = document.getElementById("closeFinish");
+const toast = document.getElementById("toast");
+
+let rooms = [];
+let used = new Set();
+let remaining = TOTAL_CHANGES;
+let busy = new Set();
+let audioCtx = null;
+let saving = false;
+let resetting = false;
+
+function randInt(n) {
+  if (window.crypto && window.crypto.getRandomValues) {
+    const x = new Uint32Array(1);
+    window.crypto.getRandomValues(x);
+    return Math.floor((x[0] / 4294967296) * n);
+  }
+  return Math.floor(Math.random() * n);
+}
+
+function createRooms() {
+  board.innerHTML = "";
+  rooms = Array.from({length:ROOM_COUNT}, (_, i) => {
+    const isNoah = i === NOAH_INDEX;
+    const el = document.createElement("button");
+    el.type = "button";
+    el.className = "room";
+    el.setAttribute("aria-label", isNoah ? "ノア一家の部屋" : `部屋 ${i+1}`);
+    const img = document.createElement("img");
+    img.alt = "";
+    img.draggable = false;
+    img.referrerPolicy = "no-referrer";
+    img.crossOrigin = "anonymous";
+    img.src = isNoah && NOAH_ROOM_URL ? NOAH_ROOM_URL : EMPTY_ROOM_URL;
+    const flash = document.createElement("span");
+    flash.className = "flash";
+    el.append(img, flash);
+
+    el.addEventListener("pointerdown", e => addRipple(el, e));
+    el.addEventListener("click", () => changeRoom(i));
+    board.appendChild(el);
+    return { el, img, url: isNoah && NOAH_ROOM_URL ? NOAH_ROOM_URL : EMPTY_ROOM_URL, animal:isNoah };
+  });
+}
+
+function addRipple(el, e) {
+  const r = el.getBoundingClientRect();
+  const dot = document.createElement("span");
+  dot.className = "ripple";
+  dot.style.left = `${e.clientX-r.left}px`;
+  dot.style.top = `${e.clientY-r.top}px`;
+  el.appendChild(dot);
+  dot.addEventListener("animationend", () => dot.remove(), {once:true});
+}
+
+function unusedUrls() {
+  return ANIMAL_URLS.filter(u => !used.has(u));
+}
+
+function emptyAnimalSlots() {
+  return rooms.filter(r => !r.animal).length;
+}
+
+function canReroll(room) {
+  const empty = emptyAnimalSlots();
+  if (!room.animal) return true;
+  return remaining > empty;
+}
+
+async function changeRoom(index) {
+  const room = rooms[index];
+  if (resetting || remaining <= 0 || busy.has(index)) return;
+
+  if (!canReroll(room)) {
+    room.el.classList.remove("denied");
+    void room.el.offsetWidth;
+    room.el.classList.add("denied");
+    hintEl.textContent = "残り回数と空室数が同じです。まず空いている部屋を選んでください";
+    softTick(130);
+    return;
+  }
+
+  const pool = unusedUrls();
+  if (!pool.length) {
+    showToast("これ以上、新しい動物はいません");
+    return;
+  }
+
+  const next = pool[randInt(pool.length)];
+  busy.add(index);
+
+  try {
+    await preload(next);
+    room.el.classList.add("changing");
+    softTick(220);
+    await wait(155);
+
+    room.img.src = next;
+    room.url = next;
+    room.animal = true;
+    used.add(next);
+    remaining--;
+
+    room.el.classList.remove("changing");
+    room.el.classList.remove("reveal");
+    void room.el.offsetWidth;
+    room.el.classList.add("reveal");
+    chime();
+
+    updateUI();
+
+    if (remaining === 0) {
+      await wait(720);
+      finish.classList.add("show");
+    }
+  } catch (err) {
+    showToast("画像を読み込めませんでした。もう一度タップしてください");
+  } finally {
+    busy.delete(index);
+  }
+}
+
+function updateUI() {
+  const empty = emptyAnimalSlots();
+
+  if (remaining === 0) {
+    remainingHud.classList.add("flood-arrived");
+    remainingHud.innerHTML = '<span class="hud-flood">洪水が来ました。</span>';
+  } else {
+    // remaining=0時にinnerHTMLを変えているので、リセット時は構造を復元する
+    if (!document.getElementById("remainingNumber")) {
+      remainingHud.innerHTML = `
+        <span class="hud-prefix">洪水までにあと</span>
+        <span class="hud-number" id="remainingNumber"></span>
+        <span class="hud-suffix" id="remainingSuffix"></span>`;
+    }
+    remainingHud.classList.remove("flood-arrived");
+    const num = document.getElementById("remainingNumber");
+    const suffix = document.getElementById("remainingSuffix");
+    num.textContent = remaining;
+    suffix.textContent = empty > 0
+      ? "回動物を入れられます。"
+      : "回動物を入れ替えられます。";
+  }
+
+  if (remaining === 0) {
+    hintEl.textContent = "方舟の15室が決まりました";
+  } else if (remaining === empty && empty > 0) {
+    hintEl.textContent = `あと${empty}室。ここからは空室を埋めてください`;
+  } else if (empty > 0) {
+    hintEl.textContent = `空室 ${empty}。入れ替え可能回数 ${Math.max(0, remaining-empty)}`;
+  } else {
+    hintEl.textContent = `あと${remaining}回、残したい動物を見極める`;
+  }
+}
+
+function preload(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.referrerPolicy = "no-referrer";
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+function wait(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function animateElement(el, keyframes, options) {
+  if (el && typeof el.animate === "function") {
+    try {
+      const anim = el.animate(keyframes, options);
+      return anim.finished.catch(() => {});
+    } catch(e) {}
+  }
+
+  // 古いWebView向けの最低限フォールバック
+  const last = keyframes[keyframes.length - 1] || {};
+  const delay = Number(options.delay || 0);
+  const duration = Number(options.duration || 0);
+  return new Promise(resolve => {
+    setTimeout(() => {
+      Object.entries(last).forEach(([key, value]) => {
+        if (key !== "offset" && key !== "easing") el.style[key] = value;
+      });
+      setTimeout(resolve, Math.max(16, duration));
+    }, delay);
+  });
+}
+
+async function resetGame() {
+  if (resetting || saving) return;
+
+  resetting = true;
+  finish.classList.remove("show");
+
+  const oldResetText = resetBtn.textContent;
+  resetBtn.disabled = true;
+  downloadBtn.disabled = true;
+  resetBtn.textContent = "最初の夜へ戻る…";
+  hintEl.textContent = "方舟の灯りが消えていく";
+
+  try {
+    resetGroan();
+
+    // CSSのprefers-reduced-motionには依存せず、
+    // 明示的な「最初から」操作だけJSで確実にアニメーションさせる。
+    const outAnimations = rooms.map((room, i) => {
+      const order = ROOM_COUNT - 1 - i; // 右下 → 左上
+      return animateElement(
+        room.img,
+        [
+          {filter:"brightness(1) saturate(1)", opacity:1, transform:"scale(1.002)"},
+          {filter:"brightness(.06) saturate(.25)", opacity:.48, transform:"scale(.965)"}
+        ],
+        {
+          duration:360,
+          delay:order * 34,
+          easing:"cubic-bezier(.35,0,.25,1)",
+          fill:"forwards"
+        }
+      );
+    });
+
+    await Promise.all(outAnimations);
+
+    // 実DOMの暗幕を使うため、iPadのCSS疑似要素依存を避ける
+    resetVeil.style.visibility = "visible";
+    await animateElement(
+      resetVeil,
+      [{opacity:0},{opacity:1}],
+      {duration:220,easing:"ease-out",fill:"forwards"}
+    );
+
+    used.clear();
+    remaining = TOTAL_CHANGES;
+    busy.clear();
+    createRooms();
+    updateUI();
+
+    // 新しい15室は暗い状態から開始
+    rooms.forEach(room => {
+      room.img.style.filter = "brightness(.06) saturate(.25)";
+      room.img.style.opacity = ".48";
+      room.img.style.transform = "scale(.965)";
+    });
+
+    hintEl.textContent = "最初の夜へ戻った";
+
+    // 暗幕を先に少し薄くし、中央から各部屋の灯りを戻す
+    const veilOut = animateElement(
+      resetVeil,
+      [{opacity:1},{opacity:0}],
+      {duration:430,easing:"ease-in-out",fill:"forwards"}
+    );
+
+    const inAnimations = rooms.map((room, i) => {
+      const row = Math.floor(i / 5);
+      const col = i % 5;
+      const distance = Math.abs(row - 1) + Math.abs(col - 2);
+      return animateElement(
+        room.img,
+        [
+          {filter:"brightness(.06) saturate(.25)", opacity:.48, transform:"scale(.965)"},
+          {filter:"brightness(1.22) saturate(.95)", opacity:1, transform:"scale(1.012)", offset:.68},
+          {filter:"brightness(1) saturate(1)", opacity:1, transform:"scale(1.002)"}
+        ],
+        {
+          duration:520,
+          delay:distance * 95,
+          easing:"cubic-bezier(.18,.78,.2,1)",
+          fill:"forwards"
+        }
+      );
+    });
+
+    await Promise.all([veilOut, ...inAnimations]);
+
+    rooms.forEach(room => {
+      room.img.getAnimations?.().forEach(a => a.cancel());
+      room.img.style.filter = "";
+      room.img.style.opacity = "";
+      room.img.style.transform = "";
+    });
+
+    resetVeil.getAnimations?.().forEach(a => a.cancel());
+    resetVeil.style.opacity = "0";
+    resetVeil.style.visibility = "hidden";
+
+    updateUI();
+    resetWakeChime();
+  } finally {
+    resetVeil.style.opacity = "0";
+    resetVeil.style.visibility = "hidden";
+    resetBtn.disabled = false;
+    downloadBtn.disabled = false;
+    resetBtn.textContent = oldResetText;
+    resetting = false;
+  }
+}
+
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add("show");
+  clearTimeout(showToast.t);
+  showToast.t = setTimeout(() => toast.classList.remove("show"), 2600);
+}
+
+function ensureAudio() {
+  if (!audioCtx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (AC) audioCtx = new AC();
+  }
+  if (audioCtx?.state === "suspended") audioCtx.resume();
+}
+
+function softTick(freq=180) {
+  try {
+    ensureAudio();
+    if (!audioCtx) return;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(Math.max(70,freq*.58), audioCtx.currentTime+.12);
+    g.gain.setValueAtTime(.0001, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(.035, audioCtx.currentTime+.008);
+    g.gain.exponentialRampToValueAtTime(.0001, audioCtx.currentTime+.14);
+    o.connect(g).connect(audioCtx.destination);
+    o.start();
+    o.stop(audioCtx.currentTime+.15);
+  } catch(e) {}
+}
+
+function resetGroan() {
+  try {
+    ensureAudio();
+    if (!audioCtx) return;
+
+    const now = audioCtx.currentTime;
+    const master = audioCtx.createGain();
+    master.gain.setValueAtTime(.0001, now);
+    master.gain.exponentialRampToValueAtTime(.045, now + .08);
+    master.gain.exponentialRampToValueAtTime(.0001, now + .78);
+    master.connect(audioCtx.destination);
+
+    const low = audioCtx.createOscillator();
+    low.type = "sawtooth";
+    low.frequency.setValueAtTime(82, now);
+    low.frequency.exponentialRampToValueAtTime(43, now + .74);
+
+    const upper = audioCtx.createOscillator();
+    upper.type = "triangle";
+    upper.frequency.setValueAtTime(126, now);
+    upper.frequency.exponentialRampToValueAtTime(69, now + .68);
+
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(520, now);
+    filter.frequency.exponentialRampToValueAtTime(180, now + .72);
+    filter.Q.value = .7;
+
+    const upperGain = audioCtx.createGain();
+    upperGain.gain.value = .16;
+
+    low.connect(filter);
+    upper.connect(upperGain).connect(filter);
+    filter.connect(master);
+
+    low.start(now);
+    upper.start(now + .025);
+    low.stop(now + .8);
+    upper.stop(now + .72);
+  } catch(e) {}
+}
+
+function resetWakeChime() {
+  try {
+    ensureAudio();
+    if (!audioCtx) return;
+    const now = audioCtx.currentTime;
+    [196, 293.66, 392].forEach((f, i) => {
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      const t = now + i * .045;
+      o.type = "sine";
+      o.frequency.setValueAtTime(f, t);
+      g.gain.setValueAtTime(.0001, t);
+      g.gain.exponentialRampToValueAtTime(.022, t + .025);
+      g.gain.exponentialRampToValueAtTime(.0001, t + .34);
+      o.connect(g).connect(audioCtx.destination);
+      o.start(t);
+      o.stop(t + .36);
+    });
+  } catch(e) {}
+}
+
+function chime() {
+  try {
+    ensureAudio();
+    if (!audioCtx) return;
+    [392, 587.33, 783.99].forEach((f, k) => {
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      const t = audioCtx.currentTime + k*.035;
+      o.type = k === 0 ? "sine" : "triangle";
+      o.frequency.setValueAtTime(f, t);
+      o.frequency.exponentialRampToValueAtTime(f*1.01, t+.35);
+      g.gain.setValueAtTime(.0001,t);
+      g.gain.exponentialRampToValueAtTime(k===0?.04:.022,t+.025);
+      g.gain.exponentialRampToValueAtTime(.0001,t+.42);
+      o.connect(g).connect(audioCtx.destination);
+      o.start(t); o.stop(t+.44);
+    });
+  } catch(e) {}
+}
+
+async function waitForSettledChanges() {
+  const started = performance.now();
+  while (busy.size && performance.now() - started < 8000) {
+    await wait(60);
+  }
+}
+
+function currentRoomImage(room) {
+  if (room.img && room.img.complete && room.img.naturalWidth > 0) {
+    return Promise.resolve(room.img);
+  }
+  return preload(room.url);
+}
+
+function isIOSLike() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
+function setSavingState(on) {
+  saving = on;
+  [downloadBtn, finishDownload].forEach(btn => {
+    if (!btn) return;
+    btn.disabled = on;
+    btn.dataset.normalText ||= btn.textContent;
+    btn.textContent = on ? "作成中…" : btn.dataset.normalText;
+  });
+}
+
+async function deliverImageBlob(blob) {
+  const filename = "15部屋しか作れなかったノアの方舟.png";
+
+  // iPhone / iPad はWebビュー差が大きいため、利用できる場合は
+  // OS標準の共有シートへ渡す。そこから「画像を保存」「ファイルに保存」が選べる。
+  if (isIOSLike() && window.File && navigator.share && navigator.canShare) {
+    try {
+      const file = new File([blob], filename, {type:"image/png"});
+      if (navigator.canShare({files:[file]})) {
+        await navigator.share({
+          files:[file],
+          title:"15部屋しか作れなかったノアの方舟"
+        });
+        showToast("共有メニューから保存先を選べます");
+        return;
+      }
+    } catch (err) {
+      if (err && err.name === "AbortError") return;
+      console.warn("Share fallback:", err);
+    }
+  }
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  showToast("現在の配置を画像として保存しました");
+}
+
+async function makeCompositeBlob(cellW, cellH) {
+  const canvas = document.createElement("canvas");
+  canvas.width = cellW * 5;
+  canvas.height = cellH * 3;
+  const ctx = canvas.getContext("2d", {alpha:false});
+  if (!ctx) throw new Error("Canvasを利用できません");
+
+  ctx.fillStyle = "#120f0a";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  // 画面に表示済みの画像を再利用するので、保存時の再ダウンロードと
+  // デコード用メモリを抑えられる。
+  const loaded = await Promise.all(rooms.map(currentRoomImage));
+  loaded.forEach((img, i) => {
+    const x = (i % 5) * cellW;
+    const y = Math.floor(i / 5) * cellH;
+    drawCover(ctx, img, x, y, cellW, cellH);
+  });
+
+  const blob = await new Promise((resolve, reject) => {
+    if (canvas.toBlob) {
+      try {
+        canvas.toBlob(
+          b => b ? resolve(b) : reject(new Error("PNG化に失敗")),
+          "image/png"
+        );
+      } catch(e) {
+        reject(e);
+      }
+    } else {
+      try {
+        const dataURL = canvas.toDataURL("image/png");
+        const bin = atob(dataURL.split(",")[1]);
+        const bytes = new Uint8Array(bin.length);
+        for (let i=0; i<bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        resolve(new Blob([bytes], {type:"image/png"}));
+      } catch(e) {
+        reject(e);
+      }
+    }
+  });
+
+  // iOS系ブラウザでメモリを早めに返しやすくする。
+  canvas.width = 1;
+  canvas.height = 1;
+  return blob;
+}
+
+async function downloadComposite() {
+  if (saving || resetting) return;
+  setSavingState(true);
+
+  try {
+    await waitForSettledChanges();
+
+    // まず従来どおり4000×1800で作成。
+    // 端末側のCanvasメモリ制限に当たった場合のみ2500×1125へ自動フォールバック。
+    let blob;
+    try {
+      blob = await makeCompositeBlob(800, 600);
+    } catch (firstErr) {
+      console.warn("High resolution export failed; retrying smaller canvas.", firstErr);
+      blob = await makeCompositeBlob(500, 375);
+    }
+
+    await deliverImageBlob(blob);
+    chime();
+  } catch(err) {
+    console.error(err);
+    showToast("画像を保存できませんでした。通信状態と画像の共有設定を確認してください");
+  } finally {
+    setSavingState(false);
+  }
+}
+
+function drawCover(ctx,img,x,y,w,h) {
+  const sw = img.naturalWidth || img.width;
+  const sh = img.naturalHeight || img.height;
+  const sr = sw/sh, dr = w/h;
+  let sx=0, sy=0, sww=sw, shh=sh;
+  if (sr > dr) {
+    sww = sh*dr;
+    sx = (sw-sww)/2;
+  } else {
+    shh = sw/dr;
+    sy = (sh-shh)/2;
+  }
+  ctx.drawImage(img,sx,sy,sww,shh,x,y,w,h);
+}
+
+resetBtn.addEventListener("click", resetGame);
+downloadBtn.addEventListener("click", downloadComposite);
+finishDownload.addEventListener("click", downloadComposite);
+closeFinish.addEventListener("click", () => finish.classList.remove("show"));
+
+createRooms();
+updateUI();
+
+// 数枚だけ静かに先読みして、初回タップの待ちを減らす
+const warmup = () => {
+  const sample = [...ANIMAL_URLS].sort(() => Math.random()-.5).slice(0,6);
+  sample.forEach(u => { const i=new Image(); i.referrerPolicy="no-referrer"; i.src=u; });
+};
+if ("requestIdleCallback" in window) requestIdleCallback(warmup);
+else setTimeout(warmup, 600);
+</script>
+</body>
+</html>
